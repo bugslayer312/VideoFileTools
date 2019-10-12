@@ -1,6 +1,23 @@
 add_executable(FlvEditor
     Enums.cpp
     Enums.h
+    EnumUtilities.h
+    BigEndianFlvHeaders.h
+    FlvHeaders.h
+    FlvHeaders.cpp
+    FlvRecords/FlvRecord.h
+    FlvRecords/ParameterSetsRecord.cpp
+    FlvRecords/ParameterSetsRecord.h
+    FlvRecords/AvcDecoderConfigurationRecord.cpp
+    FlvRecords/AvcDecoderConfigurationRecord.h
+    FlvRecords/AvcVideoPacketRecord.cpp
+    FlvRecords/AvcVideoPacketRecord.h
+    FlvRecords/FlvTagVideoDataRecord.cpp
+    FlvRecords/FlvTagVideoDataRecord.h
+    FlvTag.cpp
+    FlvTag.h
+    FlvProcessor.cpp
+    FlvProcessor.h
     main.cpp
 )
 
