@@ -1,6 +1,7 @@
 #include "FlvTagVideoDataRecord.h"
 #include "../FlvHeaders.h"
 #include "AvcVideoPacketRecord.h"
+#include "RawDataRecord.h"
 #include "../EnumUtilities.h"
 
 #include <iostream>
@@ -29,6 +30,11 @@ void FlvTagVideoData::LoadFromStream(std::istream& ist, std::ios::pos_type const
     if (Header->CodecId == VideoCodecId::Avc) {
         VideoPacket.reset(new AvcVideoPacket());
         VideoPacket->LoadFromStream(ist, stream_end);
+    } else {
+        if (ist.tellg() < stream_end) {
+            VideoPacket.reset(new RawDataRecord("    "));
+            VideoPacket->LoadFromStream(ist, stream_end);
+        }
     }
 }
 
@@ -53,12 +59,12 @@ void FlvTagVideoData::Edit() {
     std::cout << "Editing VideoData" << std::endl;
     Header->FrameType = ReadEnumValue("FrameType", Header->FrameType, VideoFrameTypeDict);
     if (!VideoPacket) {
-        std::cout << "VideoPacket block is absent. Create ? [y/n] > ";
-        char buff[8];
-        std::cin.getline(buff, sizeof(buff)-1);
-        if (std::string(buff) == "y") {
+        std::cout << "VideoPacket block is absent. ";
+        if (Util::AskYesNo("Create?")) {
             if (Header->CodecId == VideoCodecId::Avc) {
                 VideoPacket.reset(new AvcVideoPacket());
+            } else {
+                std::cout << "Not implemented for codecId=" << Header->CodecId << std::endl;
             }
         }
     }

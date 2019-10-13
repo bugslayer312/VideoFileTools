@@ -11,3 +11,7 @@ struct FvlRecord {
     virtual void Edit() = 0;
     virtual ~FvlRecord(){}
 };
+
+namespace Util {
+    bool AskYesNo(const char* question);
+}

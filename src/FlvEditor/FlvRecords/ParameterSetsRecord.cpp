@@ -5,30 +5,36 @@
 #include <sstream>
 
 ParameterSetsRecord::ParameterSetsRecord(std::string name, uint8_t count) : Name(name), Count(count){
-    ParameterSets.resize(Count);
 }
 
 void ParameterSetsRecord::LoadFromStream(std::istream& ist, std::ios::pos_type const& stream_end) {
     StreamStart = ist.tellg();
     BigEndian::uint16_t beLength;
-    uint32_t length;
-    for (uint16_t i(0); i < Count; ++i) {
+    uint32_t length(0), searchCount(Count);
+    ParameterSets.clear();
+    Count = 0;
+    for (uint16_t i(0); i < searchCount; ++i) {
         if (stream_end - ist.tellg() < sizeof(beLength)) {
-            return;
+            break;
         }
+        std::ios::streampos prev_pos = ist.tellg();
         if (!ist.read(reinterpret_cast<char*>(&beLength), sizeof(beLength))) {
-            throw std::runtime_error("Failed to read SequenceParameterSetLength");
+            throw std::runtime_error("Failed to read ParameterSetLength");
         }
         length = ToLittleEndian(beLength);
         if (stream_end - ist.tellg() < length) {
-            return; // maybe should throw exception
+            ist.seekg(prev_pos);
+            break; // maybe should throw exception
         }
+        std::vector<std::uint8_t> params;
         if (length) {
-            ParameterSets[i].resize(length);
-            if (!ist.read(reinterpret_cast<char*>(&(ParameterSets[i][0])), length)) {
-                throw std::runtime_error("Failed to read SequenceParameterSet");
+            params.resize(length);
+            if (!ist.read(reinterpret_cast<char*>(&params[0]), length)) {
+                throw std::runtime_error("Failed to read ParameterSet");
             }
         }
+        ParameterSets.push_back(std::move(params));
+        ++Count;
     }
 }
 
@@ -82,7 +88,6 @@ void ParameterSetsRecord::Edit() {
                 idx = -1;
             }
         }
-        std::cout << "cmd: " << cmd << ", idx:" << idx << std::endl;
         if (cmd == "end") {
             break;
         }

@@ -1,6 +1,7 @@
 #include "FlvTag.h"
 #include "FlvHeaders.h"
 #include "FlvRecords/FlvTagVideoDataRecord.h"
+#include "FlvRecords/RawDataRecord.h"
 #include "../Utilities/BigEndian.h"
 
 #include <iostream>
@@ -17,7 +18,6 @@ void FlvTag::Print(std::ostream& ost) const {
     if (Data) {
         Data->Print(ost);
     }
-    ost << "  UnparsedDataSize:" << UnparsedDataSize << std::endl;
 }
 
 void FlvTag::Edit() {
@@ -41,11 +41,12 @@ void FlvTag::Edit() {
         Header->StreamId = tmp;
     }
     if (!Data) {
-        std::cout << "Data block is absent. Create ? [y/n] > ";
-        std::cin.getline(buff, sizeof(buff)-1);
-        if (std::string(buff) == "y") {
+        std::cout << "Data block is absent. ";
+        if (Util::AskYesNo("Create?")) {
             if (Header->Type == TagType::Video) {
                 Data.reset(new FlvTagVideoData());
+            } else {
+                std::cout << "Not implemented for TagType=" << Header->Type << std::endl;
             }
         }
     }
@@ -64,21 +65,26 @@ std::istream& operator>>(std::istream& ist, FlvTag& flvTag) {
         return ist;
     }
     uint32_t blockSize = sizeof(FlvTagHeader) + flvTag.Header->DataSize;
-    flvTag.UnparsedDataSize = flvTag.Header->DataSize;
     end_pos += blockSize;
     if (flvTag.Header->Type == TagType::Video) {
         flvTag.Data.reset(new FlvTagVideoData());
         flvTag.Data->LoadFromStream(ist, end_pos);
+    } else {
+        if (ist.tellg() < end_pos) {
+            flvTag.Data.reset(new RawDataRecord("  "));
+            flvTag.Data->LoadFromStream(ist, end_pos);
+        }
     }
     if (ist.tellg() > end_pos) {
         throw std::runtime_error("FlvTagData too long");
     }
-    flvTag.UnparsedDataSize = end_pos - ist.tellg();
     ist.seekg(end_pos);
     BigEndian::uint32_t prevTagSize;
     if (!ist.read(reinterpret_cast<char*>(&prevTagSize), sizeof(prevTagSize)) ||
             blockSize != ToLittleEndian(prevTagSize)) {
-        throw std::runtime_error("Wrong prev flv tag size");
+        std::ostringstream oss;
+        oss << "Wrong prev flv tag size. DataSize=" << blockSize << ", prevTagSize=" << ToLittleEndian(prevTagSize);
+        throw std::runtime_error(oss.str());
     }
     return ist;
 }

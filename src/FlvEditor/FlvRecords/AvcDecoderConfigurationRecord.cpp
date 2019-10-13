@@ -1,6 +1,7 @@
 #include "AvcDecoderConfigurationRecord.h"
 #include "../FlvHeaders.h"
 #include "ParameterSetsRecord.h"
+#include "RawDataRecord.h"
 
 #include <iostream>
 #include <sstream>
@@ -19,14 +20,22 @@ void AvcDecoderConfigurationRecord::LoadFromStream(std::istream& ist, std::ios::
     }
     SequenceParameterSets.reset(new ParameterSetsRecord("SequenceParameterSets", Header->NumOfSequenceParameterSets));
     SequenceParameterSets->LoadFromStream(ist, stream_end);
-    if (!ist || stream_end - ist.tellg() < sizeof(NumOfPictureParameterSets)) {
+    if (!ist) {
         return;
     }
-    if (!ist.read(reinterpret_cast<char*>(&NumOfPictureParameterSets), sizeof(NumOfPictureParameterSets))) {
-        throw std::runtime_error("Failed to read NumOfPictureParameterSets");
+    if (ist.tellg() < stream_end) {
+        if (stream_end - ist.tellg() <= sizeof(NumOfPictureParameterSets)) {
+            if (!ist.read(reinterpret_cast<char*>(&NumOfPictureParameterSets), sizeof(NumOfPictureParameterSets))) {
+                throw std::runtime_error("Failed to read NumOfPictureParameterSets");
+            }
+            PictureParameterSets.reset(new ParameterSetsRecord("PictureParameterSets", NumOfPictureParameterSets));
+            PictureParameterSets->LoadFromStream(ist, stream_end);
+        }
+        if (ist.tellg() < stream_end) {
+            LastRawData.reset(new RawDataRecord("        UnparsedChunk: "));
+            LastRawData->LoadFromStream(ist, stream_end);
+        }
     }
-    PictureParameterSets.reset(new ParameterSetsRecord("PictureParameterSets", NumOfPictureParameterSets));
-    PictureParameterSets->LoadFromStream(ist, stream_end);
 }
 
 void AvcDecoderConfigurationRecord::SaveToStream(std::ostream& ost) {

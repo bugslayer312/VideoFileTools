@@ -5,7 +5,10 @@ add_executable(FlvEditor
     BigEndianFlvHeaders.h
     FlvHeaders.h
     FlvHeaders.cpp
+    FlvRecords/FlvRecord.cpp
     FlvRecords/FlvRecord.h
+    FlvRecords/RawDataRecord.cpp
+    FlvRecords/RawDataRecord.h
     FlvRecords/ParameterSetsRecord.cpp
     FlvRecords/ParameterSetsRecord.h
     FlvRecords/AvcDecoderConfigurationRecord.cpp

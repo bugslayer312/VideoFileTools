@@ -12,6 +12,7 @@ struct AvcDecoderConfigurationRecord : FvlRecord {
     std::unique_ptr<ParameterSetsRecord> SequenceParameterSets;
     uint8_t NumOfPictureParameterSets;
     std::unique_ptr<ParameterSetsRecord> PictureParameterSets;
+    std::unique_ptr<FvlRecord> LastRawData;
 
     AvcDecoderConfigurationRecord();
     virtual void LoadFromStream(std::istream& ist, std::ios::pos_type const& stream_end);

@@ -11,7 +11,6 @@ struct FlvTagHeader;
 struct FlvTag {
     std::unique_ptr<FlvTagHeader> Header;
     std::ios::pos_type StreamStart;
-    uint32_t UnparsedDataSize;
     std::unique_ptr<FvlRecord> Data;
 
     FlvTag();

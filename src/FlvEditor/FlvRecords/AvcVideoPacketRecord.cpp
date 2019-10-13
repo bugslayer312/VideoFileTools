@@ -1,6 +1,7 @@
 #include "AvcVideoPacketRecord.h"
 #include "../FlvHeaders.h"
 #include "AvcDecoderConfigurationRecord.h"
+#include "RawDataRecord.h"
 
 #include <iostream>
 #include <sstream>
@@ -17,17 +18,27 @@ void AvcVideoPacket::LoadFromStream(std::istream& ist, std::ios::pos_type const&
     if (!ist) {
         return;
     }
-    switch (Header->Type)
-    {
-    case AvcPacketType::AvcSeqHeader:
-        if (stream_end - ist.tellg() >= sizeof(AvcDecoderConfigurationRecordHeader)) {
-            AvcVideoPacketData.reset(new AvcDecoderConfigurationRecord());
-            AvcVideoPacketData->LoadFromStream(ist, stream_end);
+    if (stream_end - ist.tellg()) {
+        switch (Header->Type) {
+        case AvcPacketType::AvcSeqHeader:
+            if (stream_end - ist.tellg() >= sizeof(AvcDecoderConfigurationRecordHeader)) {
+                AvcVideoPacketData.reset(new AvcDecoderConfigurationRecord());
+            } else {
+                AvcVideoPacketData.reset(new RawDataRecord("      AVCDecoderConfigurationRecord: "));
+            }
+            break;
+        case AvcPacketType::AvcNalu:
+            AvcVideoPacketData.reset(new RawDataRecord("      NALUs: "));
+            break;
+        case AvcPacketType::AvcSeqEnd:
+            break;
+        default:
+            AvcVideoPacketData.reset(new RawDataRecord("      Unsupported: "));
+            break;
         }
-        break;
-
-    default:
-        break;
+    }
+    if (AvcVideoPacketData) {
+        AvcVideoPacketData->LoadFromStream(ist, stream_end);
     }
 }
 
@@ -35,9 +46,7 @@ void AvcVideoPacket::SaveToStream(std::ostream& ost) {
     ost << *Header.get();
     if (AvcVideoPacketData) {
         AvcVideoPacketData->SaveToStream(ost);
-        return;
     }
-    throw std::runtime_error("SaveToStream is not implemented for this AvcVideoPacketData");
 }
 
 void AvcVideoPacket::Print(std::ostream& ost) {
@@ -46,19 +55,6 @@ void AvcVideoPacket::Print(std::ostream& ost) {
     if (AvcVideoPacketData) {
         return AvcVideoPacketData->Print(ost);
     }
-    switch (Header->Type) {
-    case AvcPacketType::AvcSeqHeader:
-        ost << "        Unparsed Data: AVCDecoderConfigurationRecord" << std::endl;
-        break;
-    case AvcPacketType::AvcNalu:
-        ost << "        UnparsedData: NALUs" << std::endl;
-        break;
-    case AvcPacketType::AvcSeqEnd:
-        break;
-    default:
-        throw std::runtime_error("Unsupported AvcPacketType");
-    }
-    ost << "      ";
 }
 
 void AvcVideoPacket::Edit() {
@@ -73,11 +69,13 @@ void AvcVideoPacket::Edit() {
         Header->CompositionTime = tmp;
     }
     if (!AvcVideoPacketData) {
-        std::cout << "AvcVideoPacketData block is absent. Create ? [y/n] > ";
-        if (Header->Type == AvcPacketType::AvcSeqHeader) {
-            AvcVideoPacketData.reset(new AvcDecoderConfigurationRecord());
-        } else {
-            std::cout << "Not implemented for AvcPacketType != AvcSeqHeader" << std::endl;
+        std::cout << "AvcVideoPacketData block is absent. ";
+        if (Util::AskYesNo("Create?")) {
+            if (Header->Type == AvcPacketType::AvcSeqHeader) {
+                AvcVideoPacketData.reset(new AvcDecoderConfigurationRecord());
+            } else {
+                std::cout << "Not implemented for AvcPacketType != AvcSeqHeader" << std::endl;
+            }
         }
     }
     if (AvcVideoPacketData) {
