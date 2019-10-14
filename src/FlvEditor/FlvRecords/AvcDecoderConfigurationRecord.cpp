@@ -24,7 +24,7 @@ void AvcDecoderConfigurationRecord::LoadFromStream(std::istream& ist, std::ios::
         return;
     }
     if (ist.tellg() < stream_end) {
-        if (stream_end - ist.tellg() <= sizeof(NumOfPictureParameterSets)) {
+        if (stream_end - ist.tellg() >= sizeof(NumOfPictureParameterSets)) {
             if (!ist.read(reinterpret_cast<char*>(&NumOfPictureParameterSets), sizeof(NumOfPictureParameterSets))) {
                 throw std::runtime_error("Failed to read NumOfPictureParameterSets");
             }
