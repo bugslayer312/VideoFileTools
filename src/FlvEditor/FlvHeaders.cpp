@@ -90,17 +90,23 @@ void VideoDataHeader::Print(std::ostream& ost) const {
 }
 
 std::istream& operator>>(std::istream& ist, VideoDataHeader& hVideoData) {
-    if (!ist.read(reinterpret_cast<char*>(&hVideoData), sizeof(hVideoData))) {
+    BigEndian::VideoDataHeader beHeader;
+    if (!ist.read(reinterpret_cast<char*>(&beHeader), sizeof(beHeader))) {
         if (ist.eof()) {
             return ist;
         }
         throw std::runtime_error("Failed to read VideoDataHeader");
     }
+    hVideoData.FrameType = beHeader.FrameType;
+    hVideoData.CodecId = beHeader.CodecId;
     return ist;
 }
 
 std::ostream& operator<<(std::ostream& ost, VideoDataHeader const& hVideoData) {
-    ost.write(reinterpret_cast<const char*>(&hVideoData), sizeof(hVideoData));
+    BigEndian::VideoDataHeader beHeader;
+    beHeader.FrameType = hVideoData.FrameType;
+    beHeader.CodecId = hVideoData.CodecId;
+    ost.write(reinterpret_cast<const char*>(&beHeader), sizeof(beHeader));
     return ost;
 }
 
@@ -148,16 +154,34 @@ void AvcDecoderConfigurationRecordHeader::Print(std::ostream& ost) const {
 }
 
 std::istream& operator>>(std::istream& ist, AvcDecoderConfigurationRecordHeader& hAvcDecoderConfigurationRecord) {
-    if (!ist.read(reinterpret_cast<char*>(&hAvcDecoderConfigurationRecord), sizeof(hAvcDecoderConfigurationRecord))) {
+    BigEndian::AvcDecoderConfigurationRecordHeader beHeader;
+    if (!ist.read(reinterpret_cast<char*>(&beHeader), sizeof(beHeader))) {
         if (ist.eof()) {
             return ist;
         }
         throw std::runtime_error("Failed to read AvcDecoderConfigurationRecord");
     }
+    hAvcDecoderConfigurationRecord.Version = beHeader.Version;
+    hAvcDecoderConfigurationRecord.AvcProfileIndication = beHeader.AvcProfileIndication;
+    hAvcDecoderConfigurationRecord.ProfileCompatibility = beHeader.ProfileCompatibility;
+    hAvcDecoderConfigurationRecord.AvcLevelIndication = beHeader.AvcLevelIndication;
+    hAvcDecoderConfigurationRecord.Reserved = beHeader.Reserved;
+    hAvcDecoderConfigurationRecord.LengthSizeMinusOne = beHeader.LengthSizeMinusOne;
+    hAvcDecoderConfigurationRecord.Reserved2 = beHeader.Reserved2;
+    hAvcDecoderConfigurationRecord.NumOfSequenceParameterSets = beHeader.NumOfSequenceParameterSets;
     return ist;
 }
 
 std::ostream& operator<<(std::ostream& ost, AvcDecoderConfigurationRecordHeader const& hAvcDecoderConfigurationRecord) {
-    ost.write(reinterpret_cast<const char*>(&hAvcDecoderConfigurationRecord), sizeof(hAvcDecoderConfigurationRecord));
+    BigEndian::AvcDecoderConfigurationRecordHeader beHeader;
+    beHeader.Version = hAvcDecoderConfigurationRecord.Version;
+    beHeader.AvcProfileIndication = hAvcDecoderConfigurationRecord.AvcProfileIndication;
+    beHeader.ProfileCompatibility = hAvcDecoderConfigurationRecord.ProfileCompatibility;
+    beHeader.AvcLevelIndication = hAvcDecoderConfigurationRecord.AvcLevelIndication;
+    beHeader.LengthSizeMinusOne = hAvcDecoderConfigurationRecord.LengthSizeMinusOne;
+    beHeader.Reserved = hAvcDecoderConfigurationRecord.Reserved;
+    beHeader.NumOfSequenceParameterSets = hAvcDecoderConfigurationRecord.NumOfSequenceParameterSets;
+    beHeader.Reserved2 = hAvcDecoderConfigurationRecord.Reserved2;
+    ost.write(reinterpret_cast<const char*>(&beHeader), sizeof(beHeader));
     return ost;
 }

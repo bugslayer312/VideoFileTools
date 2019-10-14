@@ -30,8 +30,8 @@ struct FlvTagHeader {
 };
 
 struct VideoDataHeader {
-    VideoCodecId CodecId: 4;
     VideoFrameType FrameType: 4;
+    VideoCodecId CodecId: 4;
     void Print(std::ostream& ost) const;
 };
 
