@@ -15,6 +15,7 @@ struct FlvTag {
 
     FlvTag();
     void Print(std::ostream& ost) const;
+    void EditVideoTagHeader();
     void Edit();
 };
 

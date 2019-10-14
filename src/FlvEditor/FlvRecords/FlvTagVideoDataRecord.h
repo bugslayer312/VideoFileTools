@@ -14,5 +14,6 @@ struct FlvTagVideoData : FvlRecord {
     virtual void LoadFromStream(std::istream& ist, std::ios::pos_type const& stream_end);
     virtual void SaveToStream(std::ostream& ost);
     virtual void Print(std::ostream& ost);
+    void EditHeader();
     virtual void Edit();
 };

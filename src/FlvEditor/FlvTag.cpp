@@ -20,7 +20,7 @@ void FlvTag::Print(std::ostream& ost) const {
     }
 }
 
-void FlvTag::Edit() {
+void FlvTag::EditVideoTagHeader() {
     char buff[64];
     std::cout << "Editing tag header" << std::endl;
     std::cout << "timestamp[" << Header->GetFullTimestamp() << "] > ";
@@ -40,6 +40,10 @@ void FlvTag::Edit() {
         iss >> tmp;
         Header->StreamId = tmp;
     }
+}
+
+void FlvTag::Edit() {
+    EditVideoTagHeader();
     if (!Data) {
         std::cout << "Data block is absent. ";
         if (Util::AskYesNo("Create?")) {

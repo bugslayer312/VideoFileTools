@@ -15,9 +15,13 @@ private:
     void StoreUpToPos(std::ostream& ost, std::ios::pos_type pos);
     void StoreUpToEnd(std::ostream& ost);
     void SaveChanges();
-    std::string AskCommand();
+    std::string AskCommand(std::list<std::string> const& commands);
     void PrintCommandsHelp();
     void EditTag(FlvTag& flvTag, std::ios::pos_type beforeTagPos, std::ios::pos_type afterTagPos);
+    void FillAvcSequenceEndTag(FlvTag& flvTag);
+    void SaveTag(FlvTag& flvTag);
+    void DeleteAvcDecoderConfigRecord(FlvTag& flvTag, std::ios::pos_type beforeTagPos, std::ios::pos_type afterTagPos);
+    void LoadTagBinary(std::ios::pos_type beforeTagPos, std::ios::pos_type afterTagPos);
 private:
     struct EditedTagStream {
         std::ios::pos_type InStartPos;

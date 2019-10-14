@@ -57,7 +57,7 @@ void AvcVideoPacket::Print(std::ostream& ost) {
     }
 }
 
-void AvcVideoPacket::Edit() {
+void AvcVideoPacket::EditHeader() {
     std::cout << "Editing AvcVideoPacket" << std::endl;
     std::cout << "CompositionTime[" << Header->CompositionTime << "] > ";
     char buff[64];
@@ -68,6 +68,10 @@ void AvcVideoPacket::Edit() {
         iss >> tmp;
         Header->CompositionTime = tmp;
     }
+}
+
+void AvcVideoPacket::Edit() {
+    EditHeader();
     if (!AvcVideoPacketData) {
         std::cout << "AvcVideoPacketData block is absent. ";
         if (Util::AskYesNo("Create?")) {

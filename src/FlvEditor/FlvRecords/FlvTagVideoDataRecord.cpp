@@ -55,9 +55,13 @@ void FlvTagVideoData::Print(std::ostream& ost) {
     }
 }
 
-void FlvTagVideoData::Edit() {
+void FlvTagVideoData::EditHeader() {
     std::cout << "Editing VideoData" << std::endl;
     Header->FrameType = ReadEnumValue("FrameType", Header->FrameType, VideoFrameTypeDict);
+}
+
+void FlvTagVideoData::Edit() {
+    EditHeader();
     if (!VideoPacket) {
         std::cout << "VideoPacket block is absent. ";
         if (Util::AskYesNo("Create?")) {

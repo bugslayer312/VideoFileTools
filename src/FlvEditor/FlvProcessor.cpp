@@ -2,12 +2,16 @@
 #include "FlvHeaders.h"
 #include "../Utilities/BigEndian.h"
 #include "FlvTag.h"
+#include "FlvRecords/FlvTagVideoDataRecord.h"
+#include "FlvRecords/AvcVideoPacketRecord.h"
 
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include <cassert>
-#include <set>
+// #include <set>
+#include <algorithm>
+#include <iterator>
 
 FlvProcessor::FlvProcessor(std::string const& filepath, std::istream& ist)
     : m_filepath(filepath)
@@ -27,22 +31,51 @@ void FlvProcessor::Run(bool breakOnVideoTag, bool breakAtEnd) {
             std::cout << std::endl;
             if (breakOnVideoTag && flvTag.Header->Type == TagType::Video) {
                 std::cout << "Stopped. ";
-                command = AskCommand();
-                if (command == "next" || command == "continue") {
-                    if (command == "continue") {
-                        breakOnVideoTag = false;
+                bool repeat = true;
+                while (repeat) {
+                    command = AskCommand({"next", "continue", "edit", "del", "save", "load", "help"});
+                    if (command == "next" || command == "continue") {
+                        if (command == "continue") {
+                            breakOnVideoTag = false;
+                        }
+                        repeat = false;
                     }
-                    continue;
+                    else if (command == "edit") {
+                        EditTag(flvTag, beforeTagPos, m_ist.tellg());
+                        repeat = false;
+                    }
+                    else if (command == "del") {
+                        DeleteAvcDecoderConfigRecord(flvTag, beforeTagPos, m_ist.tellg());
+                        repeat = false;
+                    }
+                    else if (command == "save") {
+                        SaveTag(flvTag);
+                    }
+                    else if (command == "load") {
+                        LoadTagBinary(beforeTagPos, m_ist.tellg());
+                        repeat = false;
+                    }
+                    else if (command == "help") {
+                        PrintCommandsHelp();
+                    }
                 }
-                else if (command == "edit") {
-                    EditTag(flvTag, beforeTagPos, m_ist.tellg());
-                }
-                else if (command == "save") {
-                    std::cout << "Save tag to file\n";
-                }
-                else if (command == "load") {
-                    std::cout << "Load tag from file\n";
-                }
+            }
+        }
+    }
+    if (breakAtEnd) {
+        std::cout << "Stopped. ";
+        command = AskCommand({"next", "add"});
+        if (command == "add") {
+            FlvTag flvTag;
+            FillAvcSequenceEndTag(flvTag);
+            flvTag.Print(std::cout);
+            if (Util::AskYesNo("Apply changes?")) {
+                EditedTagStream editedTagStream;
+                editedTagStream.InStartPos = -1;
+                editedTagStream.InEndPos = -1;
+                editedTagStream.StoreStream << flvTag;
+                m_editedTagsData.push_back(std::move(editedTagStream));
+                std::cout << "Applied\n";
             }
         }
     }
@@ -122,7 +155,11 @@ void FlvProcessor::SaveChanges() {
     m_ist.seekg(0);
     while (!m_editedTagsData.empty()) {
         EditedTagStream& editedTagStream = m_editedTagsData.front();
-        StoreUpToPos(ofs, editedTagStream.InStartPos);
+        if (editedTagStream.InStartPos == -1) {
+            StoreUpToEnd(ofs);
+        } else {
+            StoreUpToPos(ofs, editedTagStream.InStartPos);
+        }
         ofs << editedTagStream.StoreStream.rdbuf();
         m_ist.seekg(editedTagStream.InEndPos);
         m_editedTagsData.pop_front();
@@ -130,8 +167,26 @@ void FlvProcessor::SaveChanges() {
     StoreUpToEnd(ofs);
 }
 
-std::string FlvProcessor::AskCommand() {
-    static std::set<std::string> const commands = {"next", "continue", "edit", "save", "load"};
+std::string FlvProcessor::AskCommand(std::list<std::string> const& commands) {
+    char buff[64];
+    std::string result;
+    while (true) {
+        std::cout << "Enter command [*";
+        std::copy(commands.begin(), commands.end(), std::ostream_iterator<std::string>(std::cout, " "));
+        std::cout << "] > ";
+        buff[63] = '\0';
+        std::cin.getline(buff, 63);
+        result = buff;
+        if (result.empty()) {
+            result = commands.front();
+        }
+        if (std::find(commands.begin(), commands.end(), result) != commands.end()) {
+            break;
+        }
+        std::cout << "Invalid command" << std::endl;
+    }
+    return result;
+    /* static std::set<std::string> const commands = {"next", "continue", "edit", "save", "load"};
     char buff[64];
     std::string result;
     while (true) {
@@ -151,7 +206,7 @@ std::string FlvProcessor::AskCommand() {
         }
         std::cout << "Invalid command" << std::endl;
     }
-    return result;
+    return result; */
 }
 
 void FlvProcessor::PrintCommandsHelp() {
@@ -173,5 +228,113 @@ void FlvProcessor::EditTag(FlvTag& flvTag, std::ios::pos_type beforeTagPos, std:
         editedTagStream.StoreStream << flvTag;
         m_editedTagsData.push_back(std::move(editedTagStream));
         std::cout << "Applied\n";
+    }
+}
+
+void FlvProcessor::FillAvcSequenceEndTag(FlvTag& tag) {
+    tag.Header.reset(new FlvTagHeader());
+    tag.Header->Type = TagType::Video;
+    tag.Header->DataSize = sizeof(VideoDataHeader) + sizeof(AvcVideoPacketHeader);
+    tag.EditVideoTagHeader();
+    std::unique_ptr<FlvTagVideoData> videoData(new FlvTagVideoData());
+    videoData->Header->CodecId = VideoCodecId::Avc;
+    videoData->EditHeader();
+    std::unique_ptr<AvcVideoPacket> videoPacket(new AvcVideoPacket());
+    videoPacket->Header->Type = AvcPacketType::AvcSeqEnd;
+    videoPacket->EditHeader();
+    videoData->VideoPacket = std::move(videoPacket);
+    tag.Data = std::move(videoData);
+}
+
+void FlvProcessor::SaveTag(FlvTag& flvTag) {
+    std::cout << "Saving current tag to file" << std::endl;
+    long start(flvTag.StreamStart), size(sizeof(FlvTagHeader) + flvTag.Header->DataSize);
+    std::cout << "Save from pos[" << start << "] > ";
+    char buff[64];
+    std::istringstream iss;
+    std::cin.getline(buff, 63);
+    buff[63] = '\0';
+    if (!std::string(buff).empty()) {
+        iss.str(buff);
+        iss.clear();
+        iss >> start;    
+    }
+    std::cout << "Size[" << size << "] > ";
+    std::cin.getline(buff, 63);
+    buff[63] = '\0';
+    if (!std::string(buff).empty()) {
+        iss.str(buff);
+        iss.clear();
+        iss >> size;
+    }
+    std::cout << "File to save > ";
+    std::cin.getline(buff, 63);
+    buff[63] = '\0';
+    std::string fname(buff);
+    size_t pos = m_filepath.rfind("/");
+    std::string folder;
+    if (pos != std::string::npos) {
+        folder = m_filepath.substr(0, pos+1);
+    }
+    fname = folder + fname;
+    std::cout << "Start=" << start << ", size=" << size << ", file=" << fname;
+    if (Util::AskYesNo("Save?")) {
+        std::ofstream ofs(fname, std::ios_base::out|std::ios_base::binary|std::ios_base::ate);
+        std::ios::pos_type pos = m_ist.tellg();
+        m_ist.seekg(start);
+        StoreUpToPos(ofs, start + size);
+        m_ist.seekg(pos);
+        std::cout << "Done." << std::endl;
+    }
+}
+
+void FlvProcessor::DeleteAvcDecoderConfigRecord(FlvTag& flvTag, std::ios::pos_type beforeTagPos, std::ios::pos_type afterTagPos) {
+    if (flvTag.Header->Type == TagType::Video) {
+        FlvTagVideoData* videoData = static_cast<FlvTagVideoData*>(flvTag.Data.get());
+        if (videoData->Header->CodecId == VideoCodecId::Avc) {
+            AvcVideoPacket* videoPacket = static_cast<AvcVideoPacket*>(videoData->VideoPacket.get());
+            std::cout << "Deleting AvcDecoderConfigRecord" << std::endl;
+            videoPacket->AvcVideoPacketData.reset(nullptr);
+            flvTag.Print(std::cout);
+            if (Util::AskYesNo("Apply?")) {
+                EditedTagStream editedTagStream;
+                editedTagStream.InStartPos = beforeTagPos;
+                editedTagStream.InEndPos = afterTagPos;
+                editedTagStream.StoreStream << flvTag;
+                m_editedTagsData.push_back(std::move(editedTagStream));
+                std::cout << "Done." << std::endl;
+            }
+        }
+    }
+}
+
+void FlvProcessor::LoadTagBinary(std::ios::pos_type beforeTagPos, std::ios::pos_type afterTagPos) {
+    std::cout << "Loading binary chunk" << std::endl;
+    std::cout << "Source file: > ";
+    char buff[64];
+    std::cin.getline(buff, 63);
+
+    std::string fname(buff);
+    size_t pos = m_filepath.rfind("/");
+    std::string folder;
+    if (pos != std::string::npos) {
+        folder = m_filepath.substr(0, pos+1);
+    }
+    fname = folder + fname;
+    std::ifstream ifs(fname, std::ios_base::in|std::ios_base::binary);
+    if (!ifs) {
+        std::cout << "Failed to open file: " << fname << std::endl;
+        return;
+    }
+    if (Util::AskYesNo("Apply?")) {
+        EditedTagStream editedTagStream;
+        editedTagStream.InStartPos = beforeTagPos;
+        editedTagStream.InEndPos = afterTagPos;
+        editedTagStream.StoreStream << ifs.rdbuf();
+        // uint32_t size = editedTagStream.StoreStream.tellp();
+        BigEndian::uint32_t size(editedTagStream.StoreStream.tellp());
+        editedTagStream.StoreStream.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        m_editedTagsData.push_back(std::move(editedTagStream));
+        std::cout << "Done." << std::endl;
     }
 }
