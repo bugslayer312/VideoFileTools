@@ -26,4 +26,5 @@ add_executable(FlvEditor
 
 target_link_libraries(FlvEditor
     Utilities
+    NaluParser
 )

@@ -1,6 +1,8 @@
 #include "RawDataRecord.h"
+#include "../../NaluParser/NaluParser.h"
 
 #include <iostream>
+#include <sstream>
 
 RawDataRecord::RawDataRecord(char const* printPrefix)
     : PrintPrefix(printPrefix)
@@ -26,4 +28,6 @@ void RawDataRecord::SaveToStream(std::ostream& ost) {
 void RawDataRecord::Print(std::ostream& ost) {
     ost << PrintPrefix << "RawData(StreamPos:" << StreamStart << ", Size:" << RawData.size()
         << ")" << std::endl;
+        NaluParser naluParser;
+        naluParser.ReadRawData(&RawData[0], 0, RawData.size());
 }
