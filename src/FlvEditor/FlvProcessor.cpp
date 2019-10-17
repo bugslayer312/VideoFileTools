@@ -186,27 +186,6 @@ std::string FlvProcessor::AskCommand(std::list<std::string> const& commands) {
         std::cout << "Invalid command" << std::endl;
     }
     return result;
-    /* static std::set<std::string> const commands = {"next", "continue", "edit", "save", "load"};
-    char buff[64];
-    std::string result;
-    while (true) {
-        std::cout << "Enter command [*next, continue, edit, save, load, help] > ";
-        std::cin.getline(buff, 63);
-        buff[63] = '\0';
-        result = buff;
-        if (result == "help") {
-            PrintCommandsHelp();
-            continue;
-        }
-        if (result.empty()) {
-            result = "next";
-        }
-        if (commands.find(result) != commands.end()) {
-            break;
-        }
-        std::cout << "Invalid command" << std::endl;
-    }
-    return result; */
 }
 
 void FlvProcessor::PrintCommandsHelp() {
@@ -331,7 +310,6 @@ void FlvProcessor::LoadTagBinary(std::ios::pos_type beforeTagPos, std::ios::pos_
         editedTagStream.InStartPos = beforeTagPos;
         editedTagStream.InEndPos = afterTagPos;
         editedTagStream.StoreStream << ifs.rdbuf();
-        // uint32_t size = editedTagStream.StoreStream.tellp();
         BigEndian::uint32_t size(editedTagStream.StoreStream.tellp());
         editedTagStream.StoreStream.write(reinterpret_cast<const char*>(&size), sizeof(size));
         m_editedTagsData.push_back(std::move(editedTagStream));

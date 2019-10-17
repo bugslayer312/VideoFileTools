@@ -28,6 +28,4 @@ void RawDataRecord::SaveToStream(std::ostream& ost) {
 void RawDataRecord::Print(std::ostream& ost) {
     ost << PrintPrefix << "RawData(StreamPos:" << StreamStart << ", Size:" << RawData.size()
         << ")" << std::endl;
-        NaluParser naluParser;
-        naluParser.ReadRawData(&RawData[0], 0, RawData.size());
 }

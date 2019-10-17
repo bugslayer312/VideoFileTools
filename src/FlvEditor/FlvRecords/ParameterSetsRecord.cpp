@@ -1,5 +1,8 @@
 #include "ParameterSetsRecord.h"
 #include "../../Utilities/BigEndian.h"
+#include "../../NaluParser/NaluParser.h"
+#include "../../Utilities/BitStream.h"
+#include "../../NaluParser/NalUnit.h"
 
 #include <iostream>
 #include <sstream>
