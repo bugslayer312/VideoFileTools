@@ -35,3 +35,4 @@ build/*
 output/*
 CMakeLists.txt.user
 .vscode/*
+data/*

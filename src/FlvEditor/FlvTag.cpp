@@ -1,6 +1,7 @@
 #include "FlvTag.h"
 #include "FlvHeaders.h"
 #include "FlvRecords/FlvTagVideoDataRecord.h"
+#include "FlvRecords/FlvTagScriptDataRecord.h"
 #include "FlvRecords/RawDataRecord.h"
 #include "../Utilities/BigEndian.h"
 
@@ -70,7 +71,19 @@ std::istream& operator>>(std::istream& ist, FlvTag& flvTag) {
     }
     uint32_t blockSize = sizeof(FlvTagHeader) + flvTag.Header->DataSize;
     end_pos += blockSize;
-    if (flvTag.Header->Type == TagType::Video) {
+    switch (flvTag.Header->Type) {
+    case TagType::Video:
+        flvTag.Data.reset(new FlvTagVideoData());
+        break;
+    //case TagType::ScriptData:
+    //    flvTag.Data.reset(new FlvTagScriptData());
+    //    break;
+    default:
+        flvTag.Data.reset(new RawDataRecord("  "));
+        break;
+    }
+    flvTag.Data->LoadFromStream(ist, end_pos);
+    /*if (flvTag.Header->Type == TagType::Video) {
         flvTag.Data.reset(new FlvTagVideoData());
         flvTag.Data->LoadFromStream(ist, end_pos);
     } else {
@@ -78,7 +91,7 @@ std::istream& operator>>(std::istream& ist, FlvTag& flvTag) {
             flvTag.Data.reset(new RawDataRecord("  "));
             flvTag.Data->LoadFromStream(ist, end_pos);
         }
-    }
+    } */
     if (ist.tellg() > end_pos) {
         throw std::runtime_error("FlvTagData too long");
     }

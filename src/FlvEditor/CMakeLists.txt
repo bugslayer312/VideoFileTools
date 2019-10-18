@@ -17,6 +17,14 @@ add_executable(FlvEditor
     FlvRecords/AvcVideoPacketRecord.h
     FlvRecords/FlvTagVideoDataRecord.cpp
     FlvRecords/FlvTagVideoDataRecord.h
+    FlvRecords/FlvTagScriptDataRecord.cpp
+    FlvRecords/FlvTagScriptDataRecord.h
+    FlvRecords/ScriptDataObject.cpp
+    FlvRecords/ScriptDataObject.h
+    FlvRecords/ScriptDataString.cpp
+    FlvRecords/ScriptDataString.h
+    FlvRecords/ScriptDataValue.cpp
+    FlvRecords/ScriptDataValue.h
     FlvTag.cpp
     FlvTag.h
     FlvProcessor.cpp

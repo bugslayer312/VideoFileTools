@@ -36,3 +36,18 @@ enum class AvcPacketType : uint8_t {
     AvcSeqEnd = 2
 };
 std::ostream& operator<<(std::ostream& ost, AvcPacketType packetType);
+
+enum class ScriptDataType : uint8_t {
+    Number = 0,
+    Boolean = 1,
+    String = 2,
+    Object = 3,
+    MovieClip = 4,
+    Null = 5,
+    Undefined = 6,
+    Reference = 7,
+    ECMAArray = 8,
+    StrictArray = 10,
+    Date = 11,
+    LongString = 12
+};
