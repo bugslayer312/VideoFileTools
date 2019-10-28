@@ -32,3 +32,4 @@ add_subdirectory(Utilities)
 
 add_subdirectory(FlvEditor)
 
+add_subdirectory(FlvEncoder)
