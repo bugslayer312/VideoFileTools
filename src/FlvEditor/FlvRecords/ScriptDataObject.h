@@ -1,16 +1,24 @@
 #pragma once
 
 #include "FlvRecord.h"
-#include "ScriptDataString.h"
-#include "ScriptDataValue.h"
+#include "../Enums.h"
 
-#include <memory>
+enum class ScriptDataType : uint8_t {
+    Number = 0,
+    Boolean = 1,
+    String = 2,
+    Object = 3,
+    MovieClip = 4,
+    Null = 5,
+    Undefined = 6,
+    Reference = 7,
+    ECMAArray = 8,
+    StrictArray = 10,
+    Date = 11,
+    LongString = 12
+};
 
 struct ScriptDataObject : FvlRecord {
-    std::unique_ptr<ScriptDataString> ObjectName;
-    std::unique_ptr<ScriptDataValue> ObjectValue;
-    virtual void LoadFromStream(std::istream& ist, std::ios::pos_type const& stream_end);
-    virtual void SaveToStream(std::ostream& ost);
-    virtual void Print(std::ostream& ost);
-    virtual void Edit();
+    ScriptDataType Type;
+    ScriptDataObject(ScriptDataType type);
 };

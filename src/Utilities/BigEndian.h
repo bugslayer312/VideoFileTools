@@ -22,6 +22,12 @@ namespace BigEndian {
         uint32_t();
         uint32_t(LittleEndianType leNum);
     };
+    struct double_t {
+        uint8_t Data[8];
+        typedef double LittleEndianType;
+        double_t();
+        double_t(LittleEndianType leNum);
+    };
     #pragma pack(0)
 };
 
@@ -34,3 +40,5 @@ typename T::LittleEndianType ToLittleEndian(T const& num) {
     }
     return res;
 }
+
+double ToLittleEndian(BigEndian::double_t const& num);

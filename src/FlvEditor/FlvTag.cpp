@@ -75,9 +75,9 @@ std::istream& operator>>(std::istream& ist, FlvTag& flvTag) {
     case TagType::Video:
         flvTag.Data.reset(new FlvTagVideoData());
         break;
-    //case TagType::ScriptData:
-    //    flvTag.Data.reset(new FlvTagScriptData());
-    //    break;
+    case TagType::ScriptData:
+        flvTag.Data.reset(new FlvTagScriptData());
+        break;
     default:
         flvTag.Data.reset(new RawDataRecord("  "));
         break;
